@@ -1,9 +1,11 @@
-import { sortPosts, allCoreContent } from 'pliny/utils/contentlayer'
-import { allBlogs } from 'contentlayer/generated'
-import Main from './Main'
+import Hero from '@/components/Hero'
+import AboutSection from '@/components/AboutSection'
 
-export default async function Page() {
-  const sortedPosts = sortPosts(allBlogs)
-  const posts = allCoreContent(sortedPosts)
-  return <Main posts={posts} />
+export default function Home() {
+  return (
+    <>
+      <Hero />
+      <AboutSection />
+    </>
+  )
 }
