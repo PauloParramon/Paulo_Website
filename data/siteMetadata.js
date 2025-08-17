@@ -2,7 +2,7 @@
 const siteMetadata = {
   title: 'Paulo Parramon Website',
   author: 'Paulo Parramon',
-  headerTitle: 'About Me',
+  headerTitle: 'Paulo Parramon',
   description: 'A blog created with Next.js and Tailwind.css',
   language: 'en-us',
   theme: 'system', // system, dark or light
