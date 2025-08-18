@@ -14,9 +14,14 @@ const compat = new FlatCompat({
 
 export default [
   {
+    // keep ignores empty if you prefer lint-staged to decide what runs
     ignores: [],
   },
+
+  // Base JS recommended config
   js.configs.recommended,
+
+  // Bring in Next/TS/Prettier/JSX a11y via compat
   ...compat.extends(
     'plugin:@typescript-eslint/eslint-recommended',
     'plugin:@typescript-eslint/recommended',
@@ -25,6 +30,8 @@ export default [
     'next',
     'next/core-web-vitals'
   ),
+
+  // Project-wide defaults
   {
     plugins: {
       '@typescript-eslint': typescriptEslint,
@@ -39,7 +46,7 @@ export default [
 
       parser: tsParser,
       ecmaVersion: 5,
-      sourceType: 'commonjs',
+      sourceType: 'commonjs', // your project default; see overrides below
 
       parserOptions: {
         project: true,
@@ -59,12 +66,45 @@ export default [
           aspects: ['invalidHref', 'preferButton'],
         },
       ],
+
       'react/prop-types': 'off',
       '@typescript-eslint/no-unused-vars': 'off',
       'react/no-unescaped-entities': 'off',
       '@typescript-eslint/explicit-module-boundary-types': 'off',
       '@typescript-eslint/no-var-requires': 'off',
       '@typescript-eslint/ban-ts-comment': 'off',
+      // NOTE: we keep @typescript-eslint/no-require-imports ON by default,
+      // and selectively turn it off only for config files (override below).
+    },
+  },
+
+  // ---- Overrides ----
+
+  // Treat .mjs files as ESM modules
+  {
+    files: ['**/*.mjs'],
+    languageOptions: {
+      sourceType: 'module',
+      ecmaVersion: 'latest',
+    },
+  },
+
+  // Allow require() in common config files that are typically CJS
+  {
+    files: [
+      'next.config.js',
+      'next.config.cjs',
+      'postcss.config.js',
+      'tailwind.config.js',
+      'prettier.config.js',
+      // add more config files here if needed
+    ],
+    languageOptions: {
+      sourceType: 'commonjs',
+    },
+    rules: {
+      '@typescript-eslint/no-require-imports': 'off',
+      '@typescript-eslint/no-var-requires': 'off',
     },
   },
 ]
