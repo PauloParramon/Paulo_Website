@@ -16,6 +16,18 @@ const ContentSecurityPolicy = `
   frame-src giscus.app
 `
 
+// CSP for the /cv page (allows embedding frames from same-origin)
+const CVPageCSP = `
+  default-src 'self';
+  script-src 'self' 'unsafe-eval' 'unsafe-inline' giscus.app analytics.umami.is;
+  style-src 'self' 'unsafe-inline';
+  img-src * blob: data:;
+  media-src *.s3.amazonaws.com;
+  connect-src *;
+  font-src 'self';
+  frame-src 'self' giscus.app
+`
+
 const securityHeaders = [
   // https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP
   {
@@ -47,7 +59,7 @@ const securityHeaders = [
     key: 'Strict-Transport-Security',
     value: 'max-age=31536000; includeSubDomains',
   },
-  // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Feature-Policy
+  // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Permissions-Policy
   {
     key: 'Permissions-Policy',
     value: 'camera=(), microphone=(), geolocation=()',
@@ -73,19 +85,40 @@ module.exports = () => {
       dirs: ['app', 'components', 'layouts', 'scripts'],
     },
     images: {
-      remotePatterns: [
-        {
-          protocol: 'https',
-          hostname: 'picsum.photos',
-        },
-      ],
+      remotePatterns: [{ protocol: 'https', hostname: 'picsum.photos' }],
       unoptimized,
     },
     async headers() {
+      // Reuse your existing headers but drop specific keys for overrides
+      const withoutCSP = securityHeaders.filter((h) => h.key !== 'Content-Security-Policy')
+      const withoutCSPandXFO = securityHeaders.filter(
+        (h) => h.key !== 'Content-Security-Policy' && h.key !== 'X-Frame-Options'
+      )
+
       return [
+        // 1) Global defaults (includes X-Frame-Options: DENY)
         {
           source: '/(.*)',
           headers: securityHeaders,
+        },
+
+        // 2) /cv page: allow embedding same-origin frames (so it can host the iframe)
+        {
+          source: '/cv',
+          headers: [
+            ...withoutCSP,
+            { key: 'Content-Security-Policy', value: CVPageCSP.replace(/\n/g, '') },
+          ],
+        },
+
+        // 3) Actual PDF files: allow being framed by same-origin only
+        {
+          source: '/static/cv/:path*',
+          headers: [
+            ...withoutCSPandXFO,
+            { key: 'Content-Security-Policy', value: "frame-ancestors 'self';" },
+            { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+          ],
         },
       ]
     },
@@ -94,7 +127,6 @@ module.exports = () => {
         test: /\.svg$/,
         use: ['@svgr/webpack'],
       })
-
       return config
     },
   })
